@@ -1,0 +1,8 @@
+{
+    "python.defaultInterpreterPath": "c:\\Users\\Lenovo\\autoschedule_env\\Scripts\\python.exe",
+    "python.terminal.activateEnvironment": true,
+    "terminal.integrated.env.windows": {
+        "VIRTUAL_ENV": "c:\\Users\\Lenovo\\autoschedule_env",
+        "PATH": "c:\\Users\\Lenovo\\autoschedule_env\\Scripts;${env:PATH}"
+    }
+}

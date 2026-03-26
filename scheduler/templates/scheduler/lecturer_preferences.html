@@ -1,0 +1,53 @@
+{% extends 'scheduler/base_admin.html' %}
+
+{% block title %}Lecturer Preferences | AutoSchedule{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Set/Update Lecturer Preference</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-group">
+            <label>Lecturer</label>
+            {{ form.lecturer }}
+        </div>
+        <div class="form-group">
+            <label>Preferred Time Slot</label>
+            {{ form.timeslot }}
+        </div>
+        <div class="form-group">
+            <label>Preference Score (1-5)</label>
+            {{ form.preference_score }}
+        </div>
+        <button type="submit" class="btn btn-primary">Save Preference</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Saved Preferences</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Lecturer</th>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for pref in preferences %}
+            <tr>
+                <td>{{ pref.lecturer.first_name }} {{ pref.lecturer.last_name }}</td>
+                <td>{{ pref.timeslot.get_day_display }}</td>
+                <td>{{ pref.timeslot.start_time }} - {{ pref.timeslot.end_time }}</td>
+                <td><strong>{{ pref.preference_score }}</strong>/5</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No preferences set yet.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

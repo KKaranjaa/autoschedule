@@ -1,0 +1,12 @@
+{% for slot in time_slots %}
+{% with entry=timetable_data|get_item:slot.id %}
+{% if entry %}
+<div class="slot-card">
+    <div class="slot-unit">{{ entry.unit.code }}: {{ entry.unit.name }}</div>
+    <div class="slot-info">{{ entry.lecturer.first_name }} {{ entry.lecturer.last_name }} | {{ entry.room.name }}</div>
+</div>
+{% else %}
+<div class="free-slot">Free</div>
+{% endif %}
+{% endwith %}
+{% endfor %}

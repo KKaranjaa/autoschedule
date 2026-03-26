@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard | AutoSchedule</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar {
+            background: white;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #28a745;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-brand {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .nav-brand .bold {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .nav-brand .subtext {
+            font-size: 13px;
+            color: #888;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            border: 1px solid #dc3545;
+            color: #dc3545;
+            background: transparent;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .logout-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        .welcome-banner {
+            background-color: #e8f5e9;
+            padding: 25px 40px;
+            border-bottom: 1px solid #c8e6c9;
+        }
+
+        .welcome-banner h1 {
+            margin: 0;
+            font-size: 22px;
+            color: #2e7d32;
+        }
+
+        .welcome-banner p {
+            margin: 5px 0 0;
+            color: #555;
+            font-size: 15px;
+        }
+
+        .container {
+            padding: 30px 40px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid #eee;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f1f1f1;
+            padding-bottom: 10px;
+        }
+
+        .section-header h2 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        /* Timetable Grid */
+        .timetable-scroll {
+            overflow-x: auto;
+        }
+
+        .timetable {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 900px;
+        }
+
+        .timetable th,
+        .timetable td {
+            border: 1px solid #eee;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .timetable th {
+            background-color: #f9f9f9;
+            color: #666;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .timetable .time-col {
+            background-color: #f1f1f1;
+            font-weight: bold;
+            width: 120px;
+            font-size: 13px;
+        }
+
+        .slot-card {
+            background-color: #e3f2fd;
+            border-left: 4px solid #007bff;
+            padding: 8px;
+            border-radius: 4px;
+            text-align: left;
+        }
+
+        .slot-unit {
+            font-weight: bold;
+            color: #007bff;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .slot-info {
+            font-size: 11px;
+            color: #555;
+        }
+
+        .free-slot {
+            color: #ccc;
+            font-style: italic;
+            font-size: 12px;
+        }
+
+        /* Room Availability */
+        .status-badge {
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-available {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .status-occupied {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .filter-form {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        table th,
+        table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        table th {
+            color: #888;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .alert-info {
+            background: #e3f2fd;
+            color: #0d47a1;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #bbdefb;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="bold">AutoSchedule - Student</span>
+            <span class="subtext">{{ user.get_full_name }}</span>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">Logout</a>
+    </nav>
+
+    <div class="welcome-banner">
+        <h1>Welcome, {{ user.first_name }}</h1>
+        <p>{{ profile.programme.name }} — Year {{ profile.year_of_study }}</p>
+    </div>
+
+    <div class="container">
+        <!-- Section 1: My Timetable -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>My Weekly Timetable</h2>
+            </div>
+
+            {% if not has_entries %}
+            <div class="alert-info">
+                <strong>Notice:</strong> No timetable has been generated yet for your programme. Please check back
+                later.
+            </div>
+            {% else %}
+            <div class="timetable-scroll">
+                <table class="timetable">
+                    <thead>
+                        <tr>
+                            <th class="time-col">Time</th>
+                            {% for day_code, day_name in days %}
+                            <th>{{ day_name }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for time_row in unique_times %}
+                        <tr>
+                            <td class="time-col">{{ time_row.label }}</td>
+                            {% for slot in time_row.day_slots %}
+                            <td>
+                                {% if slot and slot.entry %}
+                                <div class="slot-card">
+                                    <div class="slot-unit">{{ slot.entry.unit.code }}: {{ slot.entry.unit.name }}</div>
+                                    <div class="slot-info">{{ slot.entry.lecturer.first_name }} {{
+                                        slot.entry.lecturer.last_name }} | {{ slot.entry.room.name }}</div>
+                                </div>
+                                {% else %}
+                                <div class="free-slot">Free</div>
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Section 2: Room Availability -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2>Real-time Room Availability</h2>
+                <form class="filter-form" method="GET">
+                    <label style="font-size: 13px; color: #666;">Filter Type:</label>
+                    <select name="room_type" onchange="this.form.submit()">
+                        {% for rt in room_types %}
+                        <option value="{{ rt.value }}" {% if rt.is_selected %}selected{% endif %}>{{ rt.label }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>Room Name</th>
+                        <th>Room Type</th>
+                        <th>Capacity</th>
+                        <th>Current Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for room in room_status %}
+                    <tr>
+                        <td style="font-weight: 500;">{{ room.name }}</td>
+                        <td>{{ room.room_type }}</td>
+                        <td>{{ room.capacity }}</td>
+                        <td>
+                            <span class="status-badge {{ room.status_class }}">{{ room.status }}</span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #888; padding: 30px;">No rooms found matching
+                            the filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+
+</html>

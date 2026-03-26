@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students | AutoSchedule</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid #eee;
+            max-width: 1200px;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #333;
+        }
+
+        .back-link {
+            text-decoration: none;
+            color: #007bff;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+
+        .search-box {
+            margin-bottom: 25px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-box input {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .stats {
+            background: #e7f1ff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 15px;
+            color: #0056b3;
+            font-weight: 600;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            color: #888;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        td {
+            font-size: 14px;
+            color: #444;
+        }
+
+        .student-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .messages {
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="{% url 'admin_dashboard' %}" class="back-link">&larr; Back to Dashboard</a>
+
+    <div class="card">
+        <div class="header">
+            <h1>Manage Students</h1>
+        </div>
+
+        {% if messages %}
+        <div class="messages">
+            {% for message in messages %}
+            <div class="{{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="stats">Total Students: {{ student_count }}</div>
+
+        <form method="GET" class="search-box">
+            <input type="text" name="q" placeholder="Search by name or registration number..." value="{{ query }}">
+            <button type="submit" class="btn btn-primary">Search</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Reg Number</th>
+                    <th>Programme</th>
+                    <th>Year</th>
+                    <th>Email</th>
+                    <th>Date Joined</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in students %}
+                <tr>
+                    <td class="student-name">{{ user.get_full_name }}</td>
+                    <td><code>{{ user.profile.registration_number }}</code></td>
+                    <td>{{ user.profile.programme.name }}</td>
+                    <td>{{ user.profile.year_of_study }}</td>
+                    <td>{{ user.email }}</td>
+                    <td>{{ user.date_joined|date:"M d, Y" }}</td>
+                    <td>
+                        <form method="POST" style="display:inline;"
+                            onsubmit="return confirm('Are you sure you want to remove this student?');">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_id" value="{{ user.id }}">
+                            <button type="submit" class="btn btn-danger">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" style="text-align: center; color: #888; padding: 40px;">No students found matching
+                        your search.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</body>
+
+</html>

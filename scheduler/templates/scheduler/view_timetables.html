@@ -1,0 +1,634 @@
+{% extends 'scheduler/base_admin.html' %}
+{% block title %}Timetable — University of Embu AutoSchedule{% endblock %}
+{% block content %}
+<style>
+    /* ── Page ────────────────────────────────────────────────────────────── */
+    .tt-page {
+        font-family: 'Segoe UI', Arial, sans-serif;
+    }
+
+    /* ── Filter bar ─────────────────────────────────────────────────────── */
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: flex-end;
+        background: #fff;
+        padding: 12px 16px;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .08);
+        margin-bottom: 10px;
+    }
+
+    .filter-bar label {
+        font-size: .78rem;
+        color: #555;
+        display: block;
+        margin-bottom: 3px;
+    }
+
+    .filter-bar select {
+        padding: 6px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 5px;
+        font-size: .82rem;
+        min-width: 190px;
+    }
+
+    .btn-tf {
+        padding: 7px 16px;
+        border-radius: 5px;
+        font-size: .82rem;
+        cursor: pointer;
+        border: none;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .btn-primary {
+        background: #2563eb;
+        color: #fff;
+    }
+
+    .btn-secondary {
+        background: #e5e7eb;
+        color: #374151;
+    }
+
+    .btn-print {
+        background: #16a34a;
+        color: #fff;
+    }
+
+    /* ── Room-type legend ───────────────────────────────────────────────── */
+    .rt-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 10px;
+        background: #fff;
+        padding: 8px 14px;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, .06);
+        font-size: .74rem;
+    }
+
+    .rt-legend strong {
+        color: #374151;
+        margin-right: 4px;
+    }
+
+    .rt-badge {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 5px;
+        padding: 3px 10px;
+        font-size: .72rem;
+        font-weight: 600;
+        border-left: 4px solid transparent;
+    }
+
+    .rt-badge.rt-lecture {
+        background: #dbeafe;
+        border-color: #3b82f6;
+        color: #1e3a5f;
+    }
+
+    .rt-badge.rt-computer {
+        background: #dcfce7;
+        border-color: #16a34a;
+        color: #14532d;
+    }
+
+    .rt-badge.rt-physics {
+        background: #fef9c3;
+        border-color: #ca8a04;
+        color: #713f12;
+    }
+
+    .rt-badge.rt-chemistry {
+        background: #ffedd5;
+        border-color: #ea580c;
+        color: #7c2d12;
+    }
+
+    .rt-badge.rt-biology {
+        background: #fce7f9;
+        border-color: #db2777;
+        color: #831843;
+    }
+
+    .session-note {
+        font-size: .71rem;
+        color: #6b7280;
+        font-style: italic;
+        margin-left: 8px;
+    }
+
+    /* ── Wrapper ─────────────────────────────────────────────────────────── */
+    .timetable-wrapper {
+        overflow-x: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, .07);
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+
+    /* ── Table ───────────────────────────────────────────────────────────── */
+    #tt-table {
+        border-collapse: collapse;
+        font-size: .68rem;
+        background: #fff;
+        table-layout: auto;
+    }
+
+    /* ── Sticky left col ─────────────────────────────────────────────────── */
+    #tt-table .prog-col {
+        position: sticky;
+        left: 0;
+        z-index: 3;
+        background: #1e3a5f;
+        color: #fff;
+        width: 120px;
+        min-width: 120px;
+        max-width: 120px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        font-size: .66rem;
+        font-weight: 600;
+        padding: 5px 7px;
+        border-right: 2px solid #0f2342;
+        border-bottom: 1px solid #2d4a73;
+    }
+
+    /* ── Sticky header ───────────────────────────────────────────────────── */
+    #tt-table thead tr:first-child th {
+        position: sticky;
+        top: 0;
+        z-index: 4;
+    }
+
+    #tt-table thead tr:nth-child(2) th {
+        position: sticky;
+        top: 28px;
+        z-index: 4;
+    }
+
+    thead th.prog-col {
+        z-index: 5 !important;
+        background: #0f2342 !important;
+    }
+
+    /* ── Day header ──────────────────────────────────────────────────────── */
+    .day-header {
+        background: #1e3a5f;
+        color: #fff;
+        text-align: center;
+        font-weight: 700;
+        font-size: .74rem;
+        padding: 6px 4px;
+        border-left: 2px solid #0f2342;
+        border-bottom: 1px solid #3d5a85;
+    }
+
+    /* ── Slot sub-header ─────────────────────────────────────────────────── */
+    .slot-hdr {
+        background: #2d4a73;
+        color: #b8cde8;
+        text-align: center;
+        padding: 3px 0;
+        border-right: 1px solid #3d5a85;
+        font-size: .6rem;
+        width: 52px;
+        min-width: 52px;
+    }
+
+    .slot-hdr.day-sep {
+        border-left: 2px solid #0f2342;
+    }
+
+    /* ── Data cells ──────────────────────────────────────────────────────── */
+    td.sc {
+        min-width: 52px;
+        min-height: 80px;
+        height: 80px;
+        vertical-align: top;
+        border: 1px solid #e5e7eb;
+        padding: 0;
+        position: relative;
+        cursor: default;
+        overflow: visible;
+    }
+
+    td.sc.day-sep {
+        border-left: 2px solid #a0aec0;
+    }
+
+    td.sc.empty {
+        background: #f9fafb;
+        min-height: 80px;
+        height: 80px;
+    }
+
+    /* ── Room-type cell styles ───────────────────────────────────────────── */
+    td.sc.rt-lecture {
+        background: #dbeafe;
+        border-left: 4px solid #3b82f6;
+    }
+
+    td.sc.rt-computer {
+        background: #dcfce7;
+        border-left: 4px solid #16a34a;
+    }
+
+    td.sc.rt-physics {
+        background: #fef9c3;
+        border-left: 4px solid #ca8a04;
+    }
+
+    td.sc.rt-chemistry {
+        background: #ffedd5;
+        border-left: 4px solid #ea580c;
+    }
+
+    td.sc.rt-biology {
+        background: #fce7f9;
+        border-left: 4px solid #db2777;
+    }
+
+    td.sc:hover {
+        filter: brightness(.92);
+        z-index: 2;
+    }
+
+    /* ── Session card inside cell ────────────────────────────────────────── */
+    .sc-card {
+        padding: 4px 6px;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start;
+        gap: 2px;
+    }
+
+    .cc-code {
+        font-weight: 700;
+        font-size: .75rem;
+        color: #1e3a5f;
+        line-height: 1.2;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cc-name {
+        font-size: .68rem;
+        color: #374151;
+        line-height: 1.2;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .cc-room {
+        font-size: .63rem;
+        color: #6b7280;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .cc-lect {
+        font-size: .63rem;
+        color: #6b7280;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* ── CSS-only tooltip ────────────────────────────────────────────────── */
+    .sc-tip {
+        display: none;
+        position: absolute;
+        bottom: calc(100% + 6px);
+        left: 0;
+        z-index: 9999;
+        background: #1e293b;
+        color: #f1f5f9;
+        border-radius: 7px;
+        padding: 8px 12px;
+        font-size: .72rem;
+        line-height: 1.55;
+        min-width: 200px;
+        max-width: 260px;
+        white-space: nowrap;
+        pointer-events: none;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, .35);
+    }
+
+    .sc-tip strong {
+        color: #93c5fd;
+        font-size: .78rem;
+    }
+
+    td.sc:hover .sc-tip {
+        display: block;
+    }
+
+    /* ── Row divider between programmes ──────────────────────────────────── */
+    .prog-top td,
+    .prog-top th {
+        border-top: 2px solid #6b7280 !important;
+    }
+
+    /* ── Slot key ─────────────────────────────────────────────────────────── */
+    .slot-key {
+        margin-top: 10px;
+        font-size: .72rem;
+        color: #6b7280;
+        background: #fff;
+        padding: 8px 14px;
+        border-radius: 6px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        align-items: center;
+    }
+
+    /* ── Programme badge ─────────────────────────────────────────────────── */
+    .prog-key-badge {
+        border: 1px solid #d1d5db;
+        border-radius: 4px;
+        padding: 3px 10px;
+        white-space: nowrap;
+    }
+
+    /* ── Print ───────────────────────────────────────────────────────────── */
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+
+        .timetable-wrapper {
+            overflow: visible;
+            max-height: none;
+            box-shadow: none;
+        }
+
+        #tt-table {
+            font-size: .52rem;
+        }
+
+        #tt-table td.sc {
+            min-width: 36px;
+            height: auto;
+            min-height: unset;
+        }
+
+        #tt-table th.slot-hdr {
+            width: 36px;
+            min-width: 36px;
+        }
+
+        #tt-table .prog-col {
+            width: 80px;
+            min-width: 80px;
+            max-width: 80px;
+            font-size: .52rem;
+        }
+
+        .day-header {
+            font-size: .58rem;
+            padding: 3px 2px;
+        }
+
+        .cc-code {
+            font-size: .52rem;
+        }
+
+        .cc-name,
+        .cc-room,
+        .cc-lect {
+            font-size: .48rem;
+        }
+
+        .sc-tip {
+            display: none !important;
+        }
+
+        @page {
+            size: A4 landscape;
+            margin: 5mm;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+    }
+</style>
+
+<div class="tt-page">
+
+    <!-- Page title -->
+    <div class="no-print"
+        style="margin-bottom:12px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:8px;">
+        <div>
+            <h1 style="font-size:1.1rem; font-weight:700; color:#1e3a5f; margin:0;">
+                🎓 University of Embu &mdash; AutoSchedule Timetable
+            </h1>
+            <p style="font-size:.74rem; color:#666; margin:2px 0 0;">
+                Semester 2 &nbsp;|&nbsp; Academic Year 2025/2026 &nbsp;|&nbsp; Generated: {{ generated_date }}
+            </p>
+        </div>
+        <button onclick="window.print()" class="btn-tf btn-print">
+            <i class="fas fa-print"></i>&nbsp; Print (A4 Landscape)
+        </button>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="filter-bar no-print">
+        <form method="GET" style="display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end;">
+            <div>
+                <label for="prog-sel">Filter by Programme</label>
+                <select name="programme" id="prog-sel" onchange="this.form.submit()">
+                    <option value="">— All Programmes —</option>
+                    {% for p in programmes %}
+                    <option value="{{ p.id }}" {% if p.is_selected %}selected{% endif %}>{{ p.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label for="lect-sel">Filter by Lecturer</label>
+                <select name="lecturer" id="lect-sel" onchange="this.form.submit()">
+                    <option value="">— All Lecturers —</option>
+                    {% for l in lecturers %}
+                    <option value="{{ l.id }}" {% if l.is_selected %}selected{% endif %}>{{ l.first_name }}
+                        {{ l.last_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div style="display:flex; gap:8px;">
+                <button type="submit" class="btn-tf btn-primary">Apply</button>
+                <a href="{% url 'view_timetables' %}" class="btn-tf btn-secondary">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Room-type colour legend -->
+    <div class="rt-legend no-print">
+        <strong>Room types:</strong>
+        {% for item in room_type_legend %}
+        <span class="rt-badge {{ item.css_class }}">{{ item.label }}</span>
+        {% endfor %}
+        <span class="session-note">&#9632; Each coloured block = one continuous class session</span>
+    </div>
+
+    {% if has_entries %}
+    <div class="timetable-wrapper">
+        <table id="tt-table">
+            <thead>
+                <!-- Row 1: Programme header + Day headers (each spans 13 slots) -->
+                <tr>
+                    <th class="prog-col" rowspan="2">Programme / Year</th>
+                    {% if rows %}
+                    {% for day_data in rows.0.days %}
+                    <th class="day-header {% if not forloop.first %}day-sep{% endif %}" colspan="13">
+                        {{ day_data.day_label }}
+                    </th>
+                    {% endfor %}
+                    {% endif %}
+                </tr>
+                <!-- Row 2: Slot numbers 1-13 per day -->
+                <tr>
+                    {% if rows %}
+                    {% for day_data in rows.0.days %}
+                    <th class="slot-hdr {% if forloop.first %}day-sep{% endif %}" title="{{ slot_labels.0 }}">1</th>
+                    <th class="slot-hdr" title="{{ slot_labels.1 }}">2</th>
+                    <th class="slot-hdr" title="{{ slot_labels.2 }}">3</th>
+                    <th class="slot-hdr" title="{{ slot_labels.3 }}">4</th>
+                    <th class="slot-hdr" title="{{ slot_labels.4 }}">5</th>
+                    <th class="slot-hdr" title="{{ slot_labels.5 }}">6</th>
+                    <th class="slot-hdr" title="{{ slot_labels.6 }}">7</th>
+                    <th class="slot-hdr" title="{{ slot_labels.7 }}">8</th>
+                    <th class="slot-hdr" title="{{ slot_labels.8 }}">9</th>
+                    <th class="slot-hdr" title="{{ slot_labels.9 }}">10</th>
+                    <th class="slot-hdr" title="{{ slot_labels.10 }}">11</th>
+                    <th class="slot-hdr" title="{{ slot_labels.11 }}">12</th>
+                    <th class="slot-hdr" title="{{ slot_labels.12 }}">13</th>
+                    {% endfor %}
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rows %}
+                <tr class="tt-row {% if forloop.first %}prog-top{% endif %}" data-programme="{{ row.programme_id }}"
+                    data-year="{{ row.year }}">
+                    <td class="prog-col" title="{{ row.label }}">{{ row.short_label }}</td>
+                    {% for day_data in row.days %}
+                    {% for cell in day_data.slots %}
+                    {% if cell.skip %}
+                    {# continuation slot — colspan covers this column, skip rendering td #}
+                    {% elif cell %}
+                    <td class="sc {{ cell.room_type_class }} {% if forloop.first %}day-sep{% endif %}"
+                        colspan="{{ cell.colspan }}" data-lecturer="{{ cell.lecturer_id }}"
+                        data-code="{{ cell.unit_code }}">
+                        <div class="sc-card">
+                            <div class="cc-code">{{ cell.unit_code }}</div>
+                            <div class="cc-name">{{ cell.unit_name }}</div>
+                            <div class="cc-room">📍 {{ cell.room }} ({{ cell.room_capacity }})</div>
+                            <div class="cc-lect">👤 {{ cell.lecturer_full }}</div>
+                        </div>
+                        <!-- CSS-only tooltip -->
+                        <div class="sc-tip">
+                            <strong>{{ cell.unit_code }}</strong> &mdash; {{ cell.unit_name }}<br>
+                            <span style="color:#94a3b8;">👤</span> {{ cell.lecturer_full }}<br>
+                            <span style="color:#94a3b8;">📍</span> {{ cell.room }} (cap. {{ cell.room_capacity }})<br>
+                            <span style="color:#94a3b8;">🏫</span> {{ cell.programme_name }}<br>
+                            <span style="color:#94a3b8;">📅</span> {{ cell.day_label }} {{ cell.start_time }}
+                            &ndash; {{ cell.end_time }}<br>
+                            <span style="color:#94a3b8;">⏰</span> {{ cell.session_hours }}-hour block
+                        </div>
+                    </td>
+                    {% else %}
+                    <td class="sc empty {% if forloop.first %}day-sep{% endif %}"></td>
+                    {% endif %}
+                    {% endfor %}
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Slot key -->
+    <div class="slot-key no-print">
+        <strong style="color:#374151;">Slot key: &nbsp;</strong>
+        {% for label in slot_labels %}
+        <span style="background:#f1f5f9; border-radius:4px; padding:2px 6px; font-size:.68rem;">
+            {{ forloop.counter }}&nbsp;=&nbsp;{{ label }}
+        </span>
+        {% endfor %}
+    </div>
+
+    <!-- Programme colour key -->
+    <div class="no-print"
+        style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; font-size:.72rem; align-items:center;">
+        <strong style="color:#374151;">Programme key:</strong>
+        {% for row in rows %}{% if row.year == 1 or row.year == "PG" %}
+        <span class="prog-key-badge" data-bg="{{ row.colour }}">
+            {{ row.label|truncatechars:40 }}
+        </span>
+        {% endif %}{% endfor %}
+    </div>
+
+    <script>
+        (function () {
+            // Apply data-bg colours (avoids CSS parser syntax errors with Django tags)
+            document.querySelectorAll('[data-bg]').forEach(el => {
+                el.style.backgroundColor = el.dataset.bg;
+            });
+
+            const selP = '{{ selected_programme }}';
+            const selL = '{{ selected_lecturer }}';
+
+            /* Filter rows by programme / lecturer */
+            document.querySelectorAll('.tt-row').forEach(row => {
+                const prog = row.dataset.programme;
+                let show = true;
+                if (selP && prog !== selP) show = false;
+                if (selL) {
+                    const has = [...row.querySelectorAll('.sc[data-lecturer]')]
+                        .some(td => td.dataset.lecturer === selL);
+                    if (!has) show = false;
+                    /* Dim cells belonging to other lecturers */
+                    row.querySelectorAll('.sc[data-lecturer]').forEach(td => {
+                        if (td.dataset.lecturer !== selL) {
+                            td.className = 'sc empty';
+                            td.innerHTML = '';
+                        }
+                    });
+                }
+                row.style.display = show ? '' : 'none';
+            });
+        })();
+    </script>
+
+    {% else %}
+    <div
+        style="text-align:center; padding:60px 20px; background:#fff; border-radius:8px; box-shadow:0 2px 10px rgba(0,0,0,.05);">
+        <div style="font-size:48px; color:#d1d5db; margin-bottom:16px;"><i class="fas fa-calendar-times"></i></div>
+        <h3 style="color:#6b7280;">No timetable entries found.</h3>
+        <p style="color:#9ca3af; margin-bottom:20px;">Run the scheduling engine first, or reset your filters.</p>
+        <a href="{% url 'generate_timetable' %}" class="btn-tf btn-primary">Go to Generator</a>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

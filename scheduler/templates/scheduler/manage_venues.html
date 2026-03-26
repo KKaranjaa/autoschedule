@@ -1,0 +1,96 @@
+{% extends 'scheduler/base_admin.html' %}
+
+{% block title %}Manage Venues | AutoSchedule{% endblock %}
+
+{% block content %}
+<style>
+    .attr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap:8px; margin-top:8px; }
+    .attr-chip { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0;
+                 border-radius:6px; padding:6px 10px; font-size:.85rem; cursor:pointer; transition:.15s; }
+    .attr-chip:hover { border-color:#3b82f6; background:#eff6ff; }
+    .attr-chip input[type=checkbox] { width:16px; height:16px; }
+    .tag-pill { display:inline-block; background:#dbeafe; color:#1e40af; border-radius:10px;
+                padding:2px 8px; font-size:.7rem; font-weight:600; margin:1px; }
+</style>
+
+<div class="card">
+    <h2>Add New Lecture Hall</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group">
+                <label style="font-weight:600; font-size:.875rem;">Venue Name</label>
+                {{ form.name }}
+            </div>
+            <div class="form-group">
+                <label style="font-weight:600; font-size:.875rem;">Capacity</label>
+                {{ form.capacity }}
+            </div>
+            <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+                {{ form.is_available }}
+                <label style="font-weight:600; font-size:.875rem; margin:0;">Available for scheduling</label>
+            </div>
+        </div>
+
+        <!-- Room Attributes ─────────────────────────────────────────────── -->
+        <div style="margin-top:20px; border-top:1px solid #e5e7eb; padding-top:16px;">
+            <p style="font-weight:600; font-size:.9rem; margin-bottom:4px;">🏷️ Smart Room Attributes</p>
+            <p style="font-size:.75rem; color:#6b7280; margin-bottom:10px;">
+                Tag this venue's features. Used for smart classification and student room recommendations.
+            </p>
+            <div class="attr-grid">
+                <label class="attr-chip"><input type="checkbox" name="attr_has_projector"> Projector</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_whiteboard"> Whiteboard</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_smartboard"> Smartboard</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_air_conditioned"> Air Conditioned</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_microphone"> Microphone</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_camera"> Recording Camera</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_wheelchair_accessible"> Wheelchair Accessible</label>
+            </div>
+        </div>
+        <!-- ─────────────────────────────────────────────────────────────── -->
+
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Add Venue</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Existing Lecture Halls</h2>
+    <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+        <thead>
+            <tr style="background:#f8f9fa;">
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:left;">Name</th>
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:center;">Capacity</th>
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:left;">Attributes</th>
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:center;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for venue in venues %}
+            <tr>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; font-weight:600;">{{ venue.name }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; text-align:center;">{{ venue.capacity }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6;">
+                    {% for tag in venue.attribute_tags %}
+                        <span class="tag-pill">{{ tag }}</span>
+                    {% empty %}
+                        <span style="color:#9ca3af; font-size:.8rem;">None set</span>
+                    {% endfor %}
+                </td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; text-align:center;">
+                    {% if venue.is_available %}
+                    <span style="color:green; font-weight:600;">✓ Available</span>
+                    {% else %}
+                    <span style="color:red;">✗ Unavailable</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" style="padding:16px; text-align:center; color:#6b7280;">No lecture halls added yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}

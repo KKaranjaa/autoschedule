@@ -1,0 +1,196 @@
+{% extends 'scheduler/base_admin.html' %}
+
+{% block title %}Manage Units | AutoSchedule{% endblock %}
+
+{% block content %}
+<style>
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+    }
+    .form-grid .full-width { grid-column: 1 / -1; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 4px; font-size: .875rem; }
+    .form-group input, .form-group select {
+        width: 100%; padding: 8px 10px; border: 1px solid #d1d5db;
+        border-radius: 6px; font-size: .9rem; background: #fff;
+    }
+    .form-group .helptext { font-size: .75rem; color: #6b7280; margin-top: 3px; }
+    .session-type-group {
+        display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .session-type-group label.radio-card {
+        flex: 1 1 auto;
+        padding: 10px 14px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: .9rem;
+        transition: border-color .15s, background .15s;
+    }
+    .session-type-group input[type=radio]:checked + label.radio-card {
+        border-color: #3b82f6;
+        background: #eff6ff;
+    }
+    .session-type-group input[type=radio] { display: none; }
+    .lab-fields { display: none; }
+    .lab-fields.visible { display: contents; }
+    .badge-practical { background: #d1fae5; color: #065f46; border-radius: 12px; padding: 2px 8px; font-size: .7rem; font-weight: 700; }
+    .badge-theory    { background: #e0f2fe; color: #0c4a6e; border-radius: 12px; padding: 2px 8px; font-size: .7rem; font-weight: 700; }
+    .badge-hybrid    { background: #fef3c7; color: #78350f; border-radius: 12px; padding: 2px 8px; font-size: .7rem; font-weight: 700; }
+</style>
+
+<div class="card">
+    <h2>Add New Unit</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Unit Code</label>
+                {{ form.code }}
+                {% if form.code.errors %}<p class="helptext" style="color:red;">{{ form.code.errors }}</p>{% endif %}
+            </div>
+            <div class="form-group">
+                <label>Required Hours / Week</label>
+                {{ form.required_hours }}
+                <p class="helptext">{{ form.required_hours.help_text }}</p>
+            </div>
+            <div class="form-group full-width">
+                <label>Unit Name</label>
+                {{ form.name }}
+            </div>
+
+            <!-- Session Type ─────────────────────────────────────────────── -->
+            <div class="form-group full-width">
+                <label>Session Type</label>
+                <p class="helptext" style="margin-bottom:8px;">{{ form.session_type.help_text }}</p>
+                <div class="session-type-group" id="session-type-group">
+                    {% for val, lbl in form.fields.session_type.choices %}
+                    <input type="radio" name="session_type" id="st_{{ val }}" value="{{ val }}"
+                        {% if form.session_type.value == val or not form.session_type.value and val == 'theory' %}checked{% endif %}>
+                    <label for="st_{{ val }}" class="radio-card">
+                        {% if val == 'theory' %}📖 {{ lbl|truncatewords:1 }}{% elif val == 'practical' %}🔬 {{ lbl|truncatewords:1 }}{% else %}🔀 {{ lbl|truncatewords:1 }}{% endif %}
+                    </label>
+                    {% endfor %}
+                </div>
+                {# render hidden actual select for POST compatibility #}
+                <div style="display:none;">{{ form.session_type }}</div>
+            </div>
+
+            <!-- Lab-specific fields (hidden for theory units) ────────────── -->
+            <div class="lab-fields" id="lab-fields">
+                <div class="form-group">
+                    <label>Preferred Lab Type</label>
+                    {{ form.preferred_lab_type }}
+                    <p class="helptext">{{ form.preferred_lab_type.help_text }}</p>
+                </div>
+                <div class="form-group" id="hybrid-hours-group" style="display:none;">
+                    <label>Lab Hours / Week (Hybrid)</label>
+                    {{ form.lab_hours_per_week }}
+                    <p class="helptext">{{ form.lab_hours_per_week.help_text }}</p>
+                </div>
+            </div>
+            <!-- ─────────────────────────────────────────────────────────── -->
+
+            <div class="form-group">
+                <label>Assigned Lecturer</label>
+                {{ form.lecturer }}
+            </div>
+            <div class="form-group">
+                <label>Programme</label>
+                {{ form.programme }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Add Unit</button>
+        {% if form.errors %}
+        <div style="color:red; margin-top:10px; font-size:.85rem;">
+            {% for field, errors in form.errors.items %}
+                {% for error in errors %}<p>{{ field }}: {{ error }}</p>{% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<div class="card">
+    <h2>Existing Units</h2>
+    <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+        <thead>
+            <tr style="background:#f8f9fa;">
+                <th style="padding:10px; border:1px solid #dee2e6;">Code</th>
+                <th style="padding:10px; border:1px solid #dee2e6;">Name</th>
+                <th style="padding:10px; border:1px solid #dee2e6;">Type</th>
+                <th style="padding:10px; border:1px solid #dee2e6;">Lab / Hall Split</th>
+                <th style="padding:10px; border:1px solid #dee2e6;">Hrs/Wk</th>
+                <th style="padding:10px; border:1px solid #dee2e6;">Lecturer</th>
+                <th style="padding:10px; border:1px solid #dee2e6;">Programme</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for unit in units %}
+            <tr>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; font-weight:600;">{{ unit.code }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6;">{{ unit.name }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6;">
+                    {% if unit.session_type == 'practical' %}
+                        <span class="badge-practical">🔬 Practical</span>
+                    {% elif unit.session_type == 'hybrid' %}
+                        <span class="badge-hybrid">🔀 Hybrid</span>
+                    {% else %}
+                        <span class="badge-theory">📖 Theory</span>
+                    {% endif %}
+                </td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; font-size:.8rem; color:#374151;">
+                    {% if unit.session_type == 'theory' %}
+                        Lecture Hall
+                    {% elif unit.session_type == 'practical' %}
+                        {{ unit.get_preferred_lab_type_display|default:"Programme default lab" }}
+                    {% else %}
+                        {{ unit.theory_hours }}h hall + {{ unit.lab_hours }}h
+                        {{ unit.get_preferred_lab_type_display|default:"lab" }}
+                    {% endif %}
+                </td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; text-align:center;">{{ unit.required_hours }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6;">
+                    {{ unit.lecturer.first_name }} {{ unit.lecturer.last_name|default:"Unassigned" }}
+                </td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6;">{{ unit.programme.name|default:"Unassigned" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="7" style="padding:16px; text-align:center; color:#6b7280;">No units added yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+
+<script>
+(function () {
+    const radios   = document.querySelectorAll('input[name="session_type"]');
+    const labDiv   = document.getElementById('lab-fields');
+    const hybGrp   = document.getElementById('hybrid-hours-group');
+    const hideSel  = document.querySelector('[name="session_type"]');  // hidden django select
+
+    function syncHidden(val) {
+        if (hideSel) {
+            for (let opt of hideSel.options) {
+                opt.selected = (opt.value === val);
+            }
+        }
+    }
+
+    function applyState(val) {
+        labDiv.classList.toggle('visible', val !== 'theory');
+        if (hybGrp) hybGrp.style.display = val === 'hybrid' ? 'block' : 'none';
+        syncHidden(val);
+    }
+
+    radios.forEach(r => {
+        r.addEventListener('change', () => applyState(r.value));
+        if (r.checked) applyState(r.value);  // init on page load
+    });
+})();
+</script>
+{% endblock %}

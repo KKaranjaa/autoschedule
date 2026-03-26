@@ -1,0 +1,42 @@
+{% extends 'scheduler/base_admin.html' %}
+
+{% block title %}Room Availability | AutoSchedule{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Room Availability Status</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Room Name</th>
+                <th>Type</th>
+                <th>Capacity</th>
+                <th>System Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for room in rooms %}
+            <tr>
+                <td>{{ room.name }}</td>
+                <td>{{ room.get_room_type_display }}</td>
+                <td>{{ room.capacity }} students</td>
+                <td>
+                    {% if room.is_available %}
+                    <span
+                        style="background: #d4edda; color: #155724; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">Available</span>
+                    {% else %}
+                    <span
+                        style="background: #f8d7da; color: #721c24; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;">Maintenance
+                        / Hidden</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4">No rooms registered in the system.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

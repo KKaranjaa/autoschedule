@@ -1,0 +1,64 @@
+{% extends 'scheduler/base_admin.html' %}
+
+{% block title %}Manage Time Slots | AutoSchedule{% endblock %}
+
+{% block content %}
+<div class="card">
+    <h2>Add New Time Slot</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr auto; gap: 15px; align-items: end;">
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Day</label>
+                {{ form.day }}
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Start Time</label>
+                {{ form.start_time }}
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>End Time</label>
+                {{ form.end_time }}
+            </div>
+            <button type="submit" class="btn btn-primary">Add Slot</button>
+        </div>
+    </form>
+</div>
+
+<div class="card">
+    <div
+        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #f0f0f0; padding-bottom: 10px;">
+        <h2 style="margin-bottom: 0; border-bottom: none;">Existing Time Slots</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <button type="submit" name="auto_generate" class="btn btn-secondary">Auto-Generate Slots</button>
+        </form>
+    </div>
+
+    {% regroup timeslots by get_day_display as day_list %}
+
+    {% for day in day_list %}
+    <h3 style="margin-top: 20px; color: #007bff; font-size: 16px;">{{ day.grouper }}</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>Day</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for slot in day.list %}
+            <tr>
+                <td>{{ slot.get_day_display }}</td>
+                <td>{{ slot.start_time|time:"H:i" }}</td>
+                <td>{{ slot.end_time|time:"H:i" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% empty %}
+    <p style="color: #777; text-align: center; padding: 20px;">No time slots defined yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

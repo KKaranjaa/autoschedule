@@ -1,0 +1,128 @@
+{% extends 'scheduler/base_admin.html' %}
+
+{% block title %}Manage Laboratories | AutoSchedule{% endblock %}
+
+{% block content %}
+<style>
+    .attr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap:8px; margin-top:8px; }
+    .attr-chip { display:flex; align-items:center; gap:6px; background:#f8fafc; border:1px solid #e2e8f0;
+                 border-radius:6px; padding:6px 10px; font-size:.85rem; cursor:pointer; transition:.15s; }
+    .attr-chip:hover { border-color:#3b82f6; background:#eff6ff; }
+    .attr-chip input[type=checkbox] { width:16px; height:16px; }
+    .tag-pill { display:inline-block; border-radius:10px; padding:2px 8px; font-size:.7rem; font-weight:600; margin:1px; }
+    .tag-bool { background:#d1fae5; color:#065f46; }
+    .tag-item { background:#dbeafe; color:#1e40af; }
+</style>
+
+<div class="card">
+    <h2>Add New Laboratory</h2>
+    <form method="POST">
+        {% csrf_token %}
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+            <div class="form-group">
+                <label style="font-weight:600; font-size:.875rem;">Lab Name</label>
+                {{ form.name }}
+            </div>
+            <div class="form-group">
+                <label style="font-weight:600; font-size:.875rem;">Lab Type</label>
+                {{ form.room_type }}
+            </div>
+            <div class="form-group">
+                <label style="font-weight:600; font-size:.875rem;">Capacity (workstations)</label>
+                {{ form.capacity }}
+            </div>
+            <div class="form-group" style="display:flex; align-items:center; gap:8px;">
+                {{ form.is_available }}
+                <label style="font-weight:600; font-size:.875rem; margin:0;">Available for scheduling</label>
+            </div>
+        </div>
+
+        <!-- Smart Lab Attributes ──────────────────────────────────────────── -->
+        <div style="margin-top:20px; border-top:1px solid #e5e7eb; padding-top:16px;">
+            <p style="font-weight:600; font-size:.9rem; margin-bottom:4px;">🏷️ Smart Lab Attributes</p>
+            <p style="font-size:.75rem; color:#6b7280; margin-bottom:12px;">
+                Tag this lab's facilities. Used by the engine for smart room classification
+                and by the student dashboard for recommendation.
+            </p>
+
+            <p style="font-size:.8rem; font-weight:600; color:#374151; margin-bottom:6px;">General Facilities</p>
+            <div class="attr-grid">
+                <label class="attr-chip"><input type="checkbox" name="attr_air_conditioned"> Air Conditioned</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_projector"> Projector</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_smartboard"> Smartboard</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_network_connected"> Network / Internet</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_wheelchair_accessible"> Wheelchair Accessible</label>
+            </div>
+
+            <p style="font-size:.8rem; font-weight:600; color:#374151; margin:12px 0 6px;">Science Lab Facilities</p>
+            <div class="attr-grid">
+                <label class="attr-chip"><input type="checkbox" name="attr_has_fume_hood"> Fume Hood</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_safety_shower"> Safety Shower</label>
+                <label class="attr-chip"><input type="checkbox" name="attr_has_microscopes"> Microscopes</label>
+            </div>
+
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:12px;">
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:.8rem;">💻 Installed Software
+                        <span style="font-weight:400; color:#6b7280;">(comma-separated)</span>
+                    </label>
+                    <input type="text" name="attr_software" placeholder="e.g. MATLAB, AutoCAD, Python, R"
+                           style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px; font-size:.85rem;">
+                </div>
+                <div class="form-group">
+                    <label style="font-weight:600; font-size:.8rem;">🔬 Specialised Equipment
+                        <span style="font-weight:400; color:#6b7280;">(comma-separated)</span>
+                    </label>
+                    <input type="text" name="attr_equipment" placeholder="e.g. Oscilloscope, Centrifuge, Spectrometer"
+                           style="width:100%; padding:8px; border:1px solid #d1d5db; border-radius:6px; font-size:.85rem;">
+                </div>
+            </div>
+        </div>
+        <!-- ─────────────────────────────────────────────────────────────── -->
+
+        <button type="submit" class="btn btn-primary" style="margin-top:16px;">Add Laboratory</button>
+    </form>
+</div>
+
+<div class="card">
+    <h2>Existing Laboratories</h2>
+    <div style="overflow-x:auto;">
+    <table style="width:100%; border-collapse:collapse; font-size:.9rem;">
+        <thead>
+            <tr style="background:#f8f9fa;">
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:left;">Name</th>
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:left;">Type</th>
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:center;">Cap.</th>
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:left;">Attributes &amp; Features</th>
+                <th style="padding:10px; border:1px solid #dee2e6; text-align:center;">Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lab in labs %}
+            <tr>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; font-weight:600;">{{ lab.name }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6;">{{ lab.get_room_type_display }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; text-align:center;">{{ lab.capacity }}</td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6;">
+                    {% for tag in lab.attribute_tags %}
+                        <span class="tag-pill tag-item">{{ tag }}</span>
+                    {% empty %}
+                        <span style="color:#9ca3af; font-size:.8rem;">None set</span>
+                    {% endfor %}
+                </td>
+                <td style="padding:8px 10px; border:1px solid #dee2e6; text-align:center;">
+                    {% if lab.is_available %}
+                    <span style="color:green; font-weight:600;">✓</span>
+                    {% else %}
+                    <span style="color:red;">✗</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" style="padding:16px; text-align:center; color:#6b7280;">No laboratories added yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</div>
+{% endblock %}
